@@ -49,6 +49,31 @@ class OwnerController {
 		this.owners = clinicService;
 		this.visits = visits;
 	}
+	/**1. IOC : Inversion of Control(제어의 역전)
+	 *  Owner database에 접근하는 OwnerRopository를 아래와 같이 OwnerController에서 만들수도 있지만 그렇게 하지 앟음.
+	 *  대신 외부에서 객체를 생성하여 생성자에서 넘겨줌. => 코드의 의존성을 낮추고 재활용성을 높임. 디버깅도 쉬움.
+	 *  참고 자료 : https://youtu.be/zmdWWujU8M4
+	 *   [아래]
+	 *  private final OwnerRepository = new OwnerRepository를 상속하는 클래스(~);
+	 *
+	 *
+	 *  이 코드에서는 OwnerControllerTests의 Spring framework에서 IOC Container가 자동으로 객체 생성후 주입.
+	 *  by @MockBean annotation(spring이 test를 만들때 자동으로 해당 type의 인스턴스를 만든 후 bean으로 만듬.)
+	 *  bean : 스프링이 관리하는 객체
+	 *  bean 주입받는 방식 1) Autowired 2) setter 3) 생성자
+	 *
+	 *  2. IOC Container :Application Context (Bean Factory)
+	 *  역할 : bean을 만들고 의존성을 엮어주고 제공
+	 *  ex : OwnerController, OwnerRepository, PetController, PetRepository 는 모두 bean으로 등록되어있음.
+	 *  bean으로 등록되는 객체 : 각 클래스에 annotation이 있음 ( @Component, @Controller, @Bean, @Indexed...)
+	 *
+	 *
+	 *  bean 객체를 하나 만들어 application 전반에 걸쳐서 재사용함
+	 *  이 코드에서는 OwnerRepository 객체를 하나 만들어서 application전반에서 재사용 : Singleton scope 객체라고 부름 (owner를 동시에 update할 일은 없으니 괜춘.)
+	 *  -> 멀티스레드에서 singleton 객체 만드는것이 굉장히 불편하지만 ioc container에서 가져다 쓰면 편함.
+	 *  참고 : https://hongku.tistory.com/107
+	 *
+	 * */
 
 	@InitBinder
 	public void setAllowedFields(WebDataBinder dataBinder) {

@@ -56,6 +56,9 @@ class OwnerControllerTests {
 	@Autowired
 	private MockMvc mockMvc;
 
+	/**
+	 Dependency Injection
+	 */
 	@MockBean
 	private OwnerRepository owners;
 
