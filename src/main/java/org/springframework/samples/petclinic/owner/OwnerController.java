@@ -42,13 +42,16 @@ class OwnerController {
 	private static final String VIEWS_OWNER_CREATE_OR_UPDATE_FORM = "owners/createOrUpdateOwnerForm";
 
 	private final OwnerRepository owners;
-
+	private final PetRepository pets;//final 쓰는 이유 : 재정의 막기 위해. 혹시 다른 함수가 override 하면 문제 생김.
 	private VisitRepository visits;
 
-	public OwnerController(OwnerRepository clinicService, VisitRepository visits) {
+	public OwnerController(OwnerRepository clinicService, PetRepository pets, VisitRepository visits) {
 		this.owners = clinicService;
+		this.pets = pets;
 		this.visits = visits;
-	}
+	}//직접 bean을 꺼내서 대응 시키는 방법 . 이 방법 외에도 멤버변수에 직접 @Autowired를 쓰는 방법도 있음.
+
+
 	/**1. IOC : Inversion of Control(제어의 역전)
 	 *  Owner database에 접근하는 OwnerRopository를 아래와 같이 OwnerController에서 만들수도 있지만 그렇게 하지 앟음.
 	 *  대신 외부에서 객체를 생성하여 생성자에서 넘겨줌. => 코드의 의존성을 낮추고 재활용성을 높임. 디버깅도 쉬움.
@@ -65,10 +68,18 @@ class OwnerController {
 	 *  2. IOC Container :Application Context (Bean Factory)
 	 *  역할 : bean을 만들고 의존성을 엮어주고 제공
 	 *  ex : OwnerController, OwnerRepository, PetController, PetRepository 는 모두 bean으로 등록되어있음.
-	 *  bean으로 등록되는 객체 : 각 클래스에 annotation이 있음 ( @Component, @Controller, @Bean, @Indexed...)
+	 *  bean을 만드는 방법
+	 *   1) component scan (component annotation) : component annotation 이 있는 애들을 다 bean으로 등록
+	 *      ex. @Component , Repository(Repository 를 상속받는 객체) , @Service, @Controller, @Configuration, .. @정의할수도있음
+	 *          @componentscan : 찾을 범위
+	 *   2) Bean으로 직접 등록
+	 *      : java Config 파일에 직접 @Bean annotation을 붙인 후 return new 객체
+	 *      이 프로젝트에서는 system 의 cacheConfigurateion 클래스
+	 *  bean을 꺼내서 쓰는 방법
+	 *  1) applicationContext의  getBean 함수 (생성자를 통해 직접 대입)
+	 *  2) @Autowired (생성자, field, setter등에 붙임) : 생성자에 붙이는 것을 권장
 	 *
-	 *
-	 *  bean 객체를 하나 만들어 application 전반에 걸쳐서 재사용함
+	 *  bean 객체를 하나 만들어 application 전반에 걸쳐서 재사용함 즉, applicationContext에서 관리
 	 *  이 코드에서는 OwnerRepository 객체를 하나 만들어서 application전반에서 재사용 : Singleton scope 객체라고 부름 (owner를 동시에 update할 일은 없으니 괜춘.)
 	 *  -> 멀티스레드에서 singleton 객체 만드는것이 굉장히 불편하지만 ioc container에서 가져다 쓰면 편함.
 	 *  참고 : https://hongku.tistory.com/107
@@ -81,6 +92,7 @@ class OwnerController {
 	}
 
 	@GetMapping("/owners/new")
+	@LogExecutionTime
 	public String initCreationForm(Map<String, Object> model) {
 		Owner owner = new Owner();
 		model.put("owner", owner);
@@ -88,6 +100,7 @@ class OwnerController {
 	}
 
 	@PostMapping("/owners/new")
+	@LogExecutionTime
 	public String processCreationForm(@Valid Owner owner, BindingResult result) {
 		if (result.hasErrors()) {
 			return VIEWS_OWNER_CREATE_OR_UPDATE_FORM;
@@ -99,12 +112,14 @@ class OwnerController {
 	}
 
 	@GetMapping("/owners/find")
+	@LogExecutionTime
 	public String initFindForm(Map<String, Object> model) {
 		model.put("owner", new Owner());
 		return "owners/findOwners";
 	}
 
 	@GetMapping("/owners")
+	@LogExecutionTime
 	public String processFindForm(Owner owner, BindingResult result, Map<String, Object> model) {
 
 		// allow parameterless GET request for /owners to return all records
@@ -132,6 +147,7 @@ class OwnerController {
 	}
 
 	@GetMapping("/owners/{ownerId}/edit")
+	@LogExecutionTime
 	public String initUpdateOwnerForm(@PathVariable("ownerId") int ownerId, Model model) {
 		Owner owner = this.owners.findById(ownerId);
 		model.addAttribute(owner);
@@ -139,6 +155,7 @@ class OwnerController {
 	}
 
 	@PostMapping("/owners/{ownerId}/edit")
+	@LogExecutionTime
 	public String processUpdateOwnerForm(@Valid Owner owner, BindingResult result,
 			@PathVariable("ownerId") int ownerId) {
 		if (result.hasErrors()) {
@@ -157,6 +174,7 @@ class OwnerController {
 	 * @return a ModelMap with the model attributes for the view
 	 */
 	@GetMapping("/owners/{ownerId}")
+	@LogExecutionTime
 	public ModelAndView showOwner(@PathVariable("ownerId") int ownerId) {
 		ModelAndView mav = new ModelAndView("owners/ownerDetails");
 		Owner owner = this.owners.findById(ownerId);
